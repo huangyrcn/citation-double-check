@@ -1,0 +1,30 @@
+% Expected findings for the mini_planted fixture.
+% This file is consumed by the grader, not by the skill itself.
+%
+% Each line: <code> <key> [<file>:<line>]   # one expected finding
+{
+  "expected_findings": [
+    {"code": "A1_undefined_key", "key": "xxx2024foo", "must_appear": true,
+     "rationale": "cited in method but not defined in bib"},
+
+    {"code": "A5_metadata_mismatch", "key": "vaswani2017attention", "must_appear": true,
+     "rationale": "Attention Is All You Need was 2017, bib says 2018"},
+
+    {"code": "A2_unused_entry", "key": "obsolete2010ghost", "must_appear": true,
+     "rationale": "in bib, never cited"},
+
+    {"code": "B_OFF_TOPIC", "key": "devlin2019bert",
+     "must_appear_for_site_substring": "PPO outperforms A2C on Atari",
+     "rationale": "BERT paper is about masked LM, not RL"},
+
+    {"code": "no_finding", "key": "radford2019language", "must_appear": true,
+     "rationale": "only used in legitimate acknowledgment-style listing in related-work, should NOT be flagged"}
+  ],
+
+  "false_positive_traps": [
+    {"key": "radford2019language",
+     "rationale": "broad related-work listing — flagging it as OFF_TOPIC would be a false positive"},
+    {"key": "vaswani2017attention",
+     "rationale": "title is correct; only year is wrong; should not be flagged as A4_unresolved"}
+  ]
+}

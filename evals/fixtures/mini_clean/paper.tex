@@ -1,0 +1,22 @@
+% Clean mini paper — citations and bib are all correct.
+% Used as a false-positive eval: a good skill should report ZERO critical findings.
+\documentclass{article}
+\usepackage[numbers]{natbib}
+\begin{document}
+
+\section{Introduction}
+The Transformer architecture \cite{vaswani2017attention} replaced recurrent
+networks for many sequence-to-sequence tasks. Building on this, BERT
+\cite{devlin2019bert} introduced bidirectional masked-language pretraining.
+
+\section{Method}
+We follow the standard self-attention formulation \cite{vaswani2017attention}.
+Our text encoder is initialised from BERT-base \cite{devlin2019bert}.
+
+\section{Related Work}
+Generative pre-training has been explored extensively
+\cite{radford2019language}. Our work focuses on a different direction.
+
+\bibliographystyle{plainnat}
+\bibliography{paper}
+\end{document}

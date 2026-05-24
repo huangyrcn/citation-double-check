@@ -1,0 +1,4 @@
+interface:
+  display_name: "Citation Double Check"
+  short_description: "Audit LaTeX citations against evidence"
+  default_prompt: "Use $citation-double-check to audit my LaTeX paper citations before submission."

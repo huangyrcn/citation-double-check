@@ -1,0 +1,26 @@
+{
+  "skill_name": "citation-double-check",
+  "evals": [
+    {
+      "id": 0,
+      "name": "real-paper-kdd-trace",
+      "prompt": "I have a LaTeX paper at <PAPER_DIR> ready for KDD camera-ready submission. It has multiple .tex files and one kdd2026.bib. Before I submit, please check the citations end-to-end: (1) every \\cite{} key resolves to a real, well-described bib entry, and (2) for each in-text citation, the cited paper actually supports the surrounding sentence. Produce reports under runs/citation-check/ in the paper directory. Do not modify the .bib or .tex files.",
+      "expected_output": "Files exist at <PAPER_DIR>/runs/citation-check/{bib_entries.json, citations.json, evidence_pack.json, report.md, report.json}. report.md follows the structure in SKILL.md (honesty disclaimer, summary, severity-grouped findings).",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "mini-planted-errors",
+      "prompt": "There's a tiny LaTeX paper at evals/fixtures/mini_planted (paper.tex + paper.bib). Please run a citation check on it and produce a report at runs/citation-check/report.md inside that directory. I want to know about both bib-entry problems and citations whose surrounding text doesn't match the cited paper.",
+      "expected_output": "report.md identifies: (a) xxx2024foo as undefined-key, (b) vaswani2017attention as year mismatch, (c) obsolete2010ghost as unused, (d) the 'PPO outperforms A2C on Atari' citation to devlin2019bert as off-topic. radford2019language should NOT be flagged.",
+      "files": ["evals/fixtures/mini_planted/paper.tex", "evals/fixtures/mini_planted/paper.bib", "evals/fixtures/mini_planted/EXPECTED.json"]
+    },
+    {
+      "id": 2,
+      "name": "mini-clean-no-issues",
+      "prompt": "Please run a citation check on the LaTeX paper at evals/fixtures/mini_clean and produce a report at runs/citation-check/report.md inside that directory. I want both bib-entry health and claim-support flagged.",
+      "expected_output": "report.md is generated and contains zero critical-severity findings. Cleanup-tier issues (e.g. missing DOI fields) are fine to mention, but no A1/A4/A5/A7/B_OFF_TOPIC/B_WRONG_DIRECTION findings should appear.",
+      "files": ["evals/fixtures/mini_clean/paper.tex", "evals/fixtures/mini_clean/paper.bib", "evals/fixtures/mini_clean/EXPECTED.json"]
+    }
+  ]
+}

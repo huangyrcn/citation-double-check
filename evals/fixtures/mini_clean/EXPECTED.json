@@ -1,0 +1,8 @@
+{
+  "expected_findings": [],
+  "constraint": "No critical findings should be reported. A few cleanup-tier findings (e.g. A6_field_missing for radford2019language having no DOI) are acceptable, but the report must NOT raise A1, A4, A5, A7, B_OFF_TOPIC, or B_WRONG_DIRECTION on any of these three entries.",
+  "false_positive_traps": [
+    {"key": "radford2019language",
+     "rationale": "OpenAlex Blog entry — must NOT be flagged A4_unresolved just because it's not a peer-reviewed venue"}
+  ]
+}

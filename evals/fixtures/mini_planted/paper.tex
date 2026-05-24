@@ -1,0 +1,25 @@
+% mini paper with planted citation errors for citation-double-check eval
+\documentclass{article}
+\usepackage[numbers]{natbib}
+\begin{document}
+
+\section{Introduction}
+Transformers \cite{vaswani2017attention} have become the de-facto architecture
+for sequence modelling. The BERT model \cite{devlin2019bert} popularised
+masked-language pretraining at scale.
+
+\section{Method}
+We adopt the FOO algorithm \cite{xxx2024foo} for our convergence proofs,
+which guarantees $O(n \log n)$ complexity \cite{vaswani2017attention}.
+
+Our reinforcement-learning baseline follows the approach of
+\cite{devlin2019bert}, who showed that PPO outperforms A2C on Atari.
+
+\section{Related Work}
+Many recent advances in NLP rely on large-scale pretraining
+\cite{vaswani2017attention,devlin2019bert,radford2019language}. We do not
+attempt an exhaustive survey here.
+
+\bibliographystyle{plainnat}
+\bibliography{paper}
+\end{document}

@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*:Zone.Identifier
+.DS_Store
+
+# 运行结果
+**/runs/citation-check/
+**/runs/citation-check/.cache/
+
+# 评估结果
+citation-double-check-workspace/
+
+# 测试数据（不是 skill 的一部分）
+KDD_TRACE_Camera/
