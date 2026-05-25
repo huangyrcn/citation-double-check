@@ -39,6 +39,7 @@ import os
 import re
 import sys
 import time
+import unicodedata
 import urllib.parse
 import xml.etree.ElementTree as ET
 from difflib import SequenceMatcher
@@ -74,6 +75,8 @@ _WS_RE = re.compile(r"\s+")
 
 def norm_title(s: str) -> str:
     s = (s or "").lower()
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
     s = _PUNCT_RE.sub(" ", s)
     return _WS_RE.sub(" ", s).strip()
 
@@ -737,7 +740,10 @@ def main():
 
     http = CachedHTTP(out_dir / ".cache", use_cache=not args.no_cache)
 
+    out_path = out_dir / "evidence_pack.json"
     pack: dict[str, dict] = {}
+    if args.only and out_path.exists():
+        pack = {k: v for k, v in json.loads(out_path.read_text(encoding="utf-8")).items() if k in cited}
     n_resolved = 0
     for i, k in enumerate(keys, 1):
         rec = resolve_key(http, k, bib[k], args.mailto, s2_key,
@@ -752,7 +758,6 @@ def main():
         else:
             print(f"  [{i:>2}/{len(keys)}] {k:<32} ✗ unresolved")
 
-    out_path = out_dir / "evidence_pack.json"
     out_path.write_text(json.dumps(pack, ensure_ascii=False, indent=2), encoding="utf-8")
     print()
     print(f"[0b] resolved {n_resolved}/{len(keys)} keys")

@@ -98,7 +98,7 @@ RECOMMENDED_FIELDS: dict[str, list[str]] = {
     "inproceedings": ["pages"],
     "conference":    ["pages"],
     "incollection":  ["publisher", "pages"],
-    "misc":          ["url/eprint"],
+    "misc":          ["url/eprint/howpublished"],
     "online":        ["url"],
 }
 
@@ -119,9 +119,6 @@ JSON_TIER = ("dblp", "crossref", "semantic_scholar", "openalex")
 
 # DataCite types that should NOT participate in author/year/venue comparisons
 SKIP_DATACITE_TYPES = {"audiovisual", "image", "software", "dataset"}
-
-# CoRR/arXiv placeholders DBLP uses when no published venue is known
-CORR_VENUES = {"corr", "corr abs", "corr abs/"}
 
 
 # ---------------------------------------------------------------------------
@@ -238,6 +235,27 @@ def venue_style_differs(bib_venue: str, dblp_venue: str) -> bool:
     return b != d
 
 
+def is_arxiv_venue(s: str) -> bool:
+    text = (s or "").lower()
+    return venue_norm(text) == "arxiv" or bool(re.search(r"(^|[^a-z0-9])(arxiv|corr)([^a-z0-9]|$)", text))
+
+
+def is_pure_arxiv_venue(s: str) -> bool:
+    text = (s or "").lower()
+    if re.fullmatch(r"\s*(?:\\url\{?)?https?://(?:www\.)?arxiv\.org/(?:abs|pdf)/\d{4}\.\d{4,5}(?:v\d+)?(?:\.pdf)?\}?\s*", text):
+        return True
+    if re.fullmatch(r"\s*(?:\\url\{?)?https?://(?:www\.)?arxiv\.org/(?:abs|pdf)/[a-z\-]+/\d{7}(?:v\d+)?(?:\.pdf)?\}?\s*", text):
+        return True
+    if not is_arxiv_venue(text):
+        return False
+    cleaned = re.sub(r"\be\s*-?\s*prints?\b", " ", text)
+    cleaned = re.sub(r"\b(?:arxiv|corr|abs|preprint)\b", " ", cleaned)
+    cleaned = re.sub(r"\b\d{4}\.\d{4,5}(?:v\d+)?\b", " ", cleaned)
+    cleaned = re.sub(r"\b[a-z\-]+/\d{7}(?:v\d+)?\b", " ", cleaned)
+    cleaned = re.sub(r"[\W_]+", " ", cleaned)
+    return not cleaned.strip()
+
+
 def parse_year(s: Any) -> int | None:
     if s is None:
         return None
@@ -278,16 +296,25 @@ def surnames_match(a: str, b: str) -> bool:
 
 
 def is_non_traditional(entry: dict) -> bool:
-    # Only check venue-related fields, not url/doi (which exist in most entries)
-    venue_fields = " ".join(str(entry.get(k, "")) for k in
-                           ("venue", "booktitle", "journal", "howpublished", "note"))
-    venue_fields = venue_fields.lower()
-    if not venue_fields.strip():
+    formal_venue = " ".join(str(entry.get(k, "")) for k in ("booktitle", "journal"))
+    if formal_venue.strip():
         return False
+
+    source_text = " ".join(str(entry.get(k, "")) for k in ("venue", "howpublished"))
+    source_text = source_text.lower()
     for pat in NON_TRADITIONAL_VENUE_PATTERNS:
-        if re.search(pat, venue_fields):
+        if re.search(pat, source_text):
             return True
-    return False
+
+    note = str(entry.get("note", "")).lower()
+    for pat in NON_TRADITIONAL_VENUE_PATTERNS:
+        if pat in (r"\bonline\b", r"\bsoftware\b"):
+            continue
+        if re.search(pat, note):
+            return True
+
+    url = str(entry.get("url", "")).lower()
+    return bool(re.search(r"(^|[/:.\-_])(github|huggingface|dataset|datasets|software|repo)([/:.\-_]|$)", url))
 
 
 def required_present(entry: dict, fields: list[str]) -> list[str]:
@@ -381,11 +408,7 @@ def _pick_from_bibtex(bibtex: dict[str, str], field: str, *,
                       skip_datacite_av: bool = False,
                       skip_gscholar: bool = False,
                       skip_arxiv: bool = False) -> tuple:
-    """Walk T1_BIB_SOURCES → T2_BIB_SOURCES, return (value, source_name).
-
-    For 'year' field: returns (year, source, all_agree) where all_agree is
-    True if all BibTeX sources with year data agree on the same value.
-    """
+    """Walk T1_BIB_SOURCES → T2_BIB_SOURCES, return (value, source_name)."""
     sources = list(T1_BIB_SOURCES)
     if skip_arxiv:
         sources = [s for s in sources if s != "arxiv"]
@@ -413,9 +436,6 @@ def _pick_from_bibtex(bibtex: dict[str, str], field: str, *,
     if field != "year":
         return values[0]
 
-    # For year field: check if all sources agree
-    years = [int(v) for v, _ in values if str(v).isdigit()]
-    all_agree = len(set(years)) <= 1
     return values[0]
 
 
@@ -564,7 +584,7 @@ def check_a4(cited_keys: set[str], bib: dict, evidence: dict) -> list[dict]:
     findings: list[dict] = []
     for k in sorted(cited_keys):
         ev = evidence.get(k)
-        if ev is None or ev.get("resolved"):
+        if ev and ev.get("resolved"):
             continue
         entry = bib.get(k, {})
         non_trad = is_non_traditional(entry)
@@ -775,6 +795,11 @@ def check_a7(cited_keys: set[str], bib: dict, evidence: dict) -> list[dict]:
                      or entry.get("journal") or entry.get("howpublished") or "")
         if not bib_venue:
             continue
+        if is_pure_arxiv_venue(bib_venue):
+            continue
+        if is_arxiv_venue(bib_venue) and is_arxiv_venue(dblp_venue):
+            if not (entry.get("booktitle") or entry.get("journal")):
+                continue
         if venue_lax_match(bib_venue, dblp_venue):
             if venue_style_differs(bib_venue, dblp_venue):
                 findings.append(make_finding(
@@ -791,6 +816,36 @@ def check_a7(cited_keys: set[str], bib: dict, evidence: dict) -> list[dict]:
             f"bib=`{bib_venue}` vs DBLP=`{dblp_venue}`",
             bib_venue=bib_venue, dblp_venue=dblp_venue,
             suggested_fix="将 bib 中 venue / booktitle 字段更新为正式发表会议或期刊名"))
+    return findings
+
+
+def _diagnosis_items(unresolved_diagnosis: Any) -> list[dict]:
+    if isinstance(unresolved_diagnosis, list):
+        return [x for x in unresolved_diagnosis if isinstance(x, dict)]
+    if isinstance(unresolved_diagnosis, dict):
+        for key in ("diagnoses", "items", "findings"):
+            value = unresolved_diagnosis.get(key)
+            if isinstance(value, list):
+                return [x for x in value if isinstance(x, dict)]
+        return [x for x in unresolved_diagnosis.values() if isinstance(x, dict)]
+    return []
+
+
+def check_a9(unresolved_diagnosis: Any, current_keys: set[str] | None = None) -> list[dict]:
+    findings: list[dict] = []
+    for item in _diagnosis_items(unresolved_diagnosis):
+        if item.get("diagnosis") != "bib_error":
+            continue
+        key = item.get("key")
+        if current_keys is not None and key not in current_keys:
+            continue
+        findings.append(make_finding(
+            "A9_bib_entry_error", "critical", key,
+            f"Stage 1 诊断发现 `{key}` 的 bib 条目存在错误：{item.get('issue', '原因未说明')}",
+            issue=item.get("issue", ""),
+            evidence=item.get("evidence", ""),
+            correct_info=item.get("correct_info") or {},
+            suggested_fix="修正 bib 条目的 arXiv ID、DOI、标题或作者信息"))
     return findings
 
 
@@ -816,6 +871,11 @@ def main():
     bib: dict = need("bib_entries.json")
     citations: list = need("citations.json")
     evidence: dict = need("evidence_pack.json")
+    diagnosis_path = out_dir / "unresolved_diagnosis.json"
+    unresolved_diagnosis: list = (
+        json.loads(diagnosis_path.read_text(encoding="utf-8"))
+        if diagnosis_path.exists() else []
+    )
 
     cited_keys = {c["key"] for c in citations} & set(bib.keys())
 
@@ -827,6 +887,7 @@ def main():
     findings += check_a5(cited_keys, bib, evidence)
     findings += check_a6(bib, evidence)
     findings += check_a7(cited_keys, bib, evidence)
+    findings += check_a9(unresolved_diagnosis, current_keys=cited_keys)
 
     counts: dict[str, int] = {"critical": 0, "warning": 0, "cleanup": 0}
     by_code: dict[str, int] = {}

@@ -216,6 +216,15 @@ def parse_bibs(paths: Iterable[Path]) -> dict:
                 "pages": clean_field(e.get("pages", "")),
                 "journal": clean_field(e.get("journal", "")),
                 "booktitle": clean_field(e.get("booktitle", "")),
+                "howpublished": clean_field(e.get("howpublished", "")),
+                "publisher": clean_field(e.get("publisher", "")),
+                "school": clean_field(e.get("school", "")),
+                "institution": clean_field(e.get("institution", "")),
+                "note": clean_field(e.get("note", "")),
+                "editor": clean_field(e.get("editor", "")),
+                "volume": clean_field(e.get("volume", "")),
+                "number": clean_field(e.get("number", "")),
+                "eprint": clean_field(e.get("eprint", "")),
                 "source_file": bp.name,
             }
     return entries

@@ -12,3 +12,4 @@ citation-double-check-workspace/
 
 # 测试数据（不是 skill 的一部分）
 KDD_TRACE_Camera/
+test_papers/
