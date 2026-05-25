@@ -6,7 +6,8 @@
       "name": "real-paper-kdd-trace",
       "prompt": "I have a LaTeX paper at <PAPER_DIR> ready for KDD camera-ready submission. It has multiple .tex files and one kdd2026.bib. Before I submit, please check the citations end-to-end: (1) every \\cite{} key resolves to a real, well-described bib entry, and (2) for each in-text citation, the cited paper actually supports the surrounding sentence. Produce reports under runs/citation-check/ in the paper directory. Do not modify the .bib or .tex files.",
       "expected_output": "Files exist at <PAPER_DIR>/runs/citation-check/{bib_entries.json, citations.json, evidence_pack.json, report.md, report.json}. report.md follows the structure in SKILL.md (honesty disclaimer, summary, severity-grouped findings).",
-      "files": []
+      "files": [],
+      "note": "Requires external KDD_TRACE_Camera paper directory (not included in repo)"
     },
     {
       "id": 1,
