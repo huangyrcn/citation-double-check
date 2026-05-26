@@ -1,0 +1,8 @@
+{
+  "name": "citation-double-check",
+  "description": "Verify academic citations: parse references, fetch evidence, check claims against sources, suggest repairs.",
+  "version": "1.0.0",
+  "author": {
+    "name": "huangyrcn"
+  }
+}
