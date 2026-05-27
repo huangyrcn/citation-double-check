@@ -95,7 +95,9 @@ def first_author_surname(authors: list[str]) -> str:
     if not authors:
         return ""
     a = authors[0]
-    return a.split(",")[0].strip() if "," in a else a.split()[-1]
+    surname = a.split(",")[0].strip() if "," in a else a.split()[-1]
+    surname = re.sub(r"\s+\d{4}$", "", surname)
+    return surname
 
 
 # ---------------------------------------------------------------------------

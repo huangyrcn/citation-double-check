@@ -207,16 +207,16 @@ def venue_lax_match(bib_venue: str, dblp_venue: str) -> bool:
     vd = venue_norm(dblp_venue)
     if vb == vd:
         return True
-    if len(vb) >= 2 and vb in vd:
+    if len(vb) >= 3 and vb in vd:
         return True
-    if len(vd) >= 2 and vd in vb:
+    if len(vd) >= 3 and vd in vb:
         return True
     # Case-insensitive substring of originals (handles acronyms like "ACL")
     b_low = bib_venue.strip().lower()
     d_low = dblp_venue.strip().lower()
-    if len(b_low) >= 2 and b_low in d_low:
+    if len(b_low) >= 3 and b_low in d_low:
         return True
-    if len(d_low) >= 2 and d_low in b_low:
+    if len(d_low) >= 3 and d_low in b_low:
         return True
     return False
 
@@ -295,6 +295,9 @@ def surnames_match(a: str, b: str) -> bool:
     return False
 
 
+_PUBLISHER_RE = re.compile(r"\b(ieee|acm|springer|elsevier|wiley|mit press|oxford)\b", re.I)
+
+
 def is_non_traditional(entry: dict) -> bool:
     formal_venue = " ".join(str(entry.get(k, "")) for k in ("booktitle", "journal"))
     if formal_venue.strip():
@@ -302,9 +305,10 @@ def is_non_traditional(entry: dict) -> bool:
 
     source_text = " ".join(str(entry.get(k, "")) for k in ("venue", "howpublished"))
     source_text = source_text.lower()
-    for pat in NON_TRADITIONAL_VENUE_PATTERNS:
-        if re.search(pat, source_text):
-            return True
+    if not _PUBLISHER_RE.search(source_text):
+        for pat in NON_TRADITIONAL_VENUE_PATTERNS:
+            if re.search(pat, source_text):
+                return True
 
     note = str(entry.get("note", "")).lower()
     for pat in NON_TRADITIONAL_VENUE_PATTERNS:
@@ -314,7 +318,7 @@ def is_non_traditional(entry: dict) -> bool:
             return True
 
     url = str(entry.get("url", "")).lower()
-    return bool(re.search(r"(^|[/:.\-_])(github|huggingface|dataset|datasets|software|repo)([/:.\-_]|$)", url))
+    return bool(re.search(r"\b(github|huggingface|dataset|datasets|software|repo)\b", url))
 
 
 def required_present(entry: dict, fields: list[str]) -> list[str]:
@@ -719,13 +723,40 @@ def _bibtex_field_value(field: str, bibtex_str: str) -> str | None:
                     return v.strip()
         except Exception:
             pass
-    # Fallback: regex (may truncate at nested braces)
-    pat = re.compile(rf"\b{field}\s*=\s*[\{{\"]([^\}}\"]+)", re.I)
+    # Fallback: balanced-brace parser
+    pat = re.compile(rf"\b{field}\s*=\s*", re.I)
     m = pat.search(bibtex_str)
-    if m:
-        v = m.group(1).strip()
+    if not m:
+        return None
+    pos = m.end()
+    while pos < len(bibtex_str) and bibtex_str[pos] in " \t\r\n":
+        pos += 1
+    if pos >= len(bibtex_str):
+        return None
+    ch = bibtex_str[pos]
+    if ch in ('"', '{'):
+        close = '"' if ch == '"' else '}'
+        depth, start = (0 if ch == '"' else 1), pos + 1
+        i = start
+        while i < len(bibtex_str):
+            c = bibtex_str[i]
+            if c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    break
+            elif c == '"' and ch == '"':
+                break
+            i += 1
+        v = bibtex_str[start:i].strip()
         return v if v else None
-    return None
+    # Bare value (no braces/quotes)
+    end = pos
+    while end < len(bibtex_str) and bibtex_str[end] not in (',', '\n', '\r'):
+        end += 1
+    v = bibtex_str[pos:end].strip()
+    return v if v else None
 
 
 def check_a6(bib: dict, evidence: dict) -> list[dict]:
@@ -827,6 +858,8 @@ def _diagnosis_items(unresolved_diagnosis: Any) -> list[dict]:
             value = unresolved_diagnosis.get(key)
             if isinstance(value, list):
                 return [x for x in value if isinstance(x, dict)]
+        if "diagnosis" in unresolved_diagnosis:
+            return [unresolved_diagnosis]
         return [x for x in unresolved_diagnosis.values() if isinstance(x, dict)]
     return []
 
