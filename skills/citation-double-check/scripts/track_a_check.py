@@ -311,11 +311,12 @@ def is_non_traditional(entry: dict) -> bool:
                 return True
 
     note = str(entry.get("note", "")).lower()
-    for pat in NON_TRADITIONAL_VENUE_PATTERNS:
-        if pat in (r"\bonline\b", r"\bsoftware\b"):
-            continue
-        if re.search(pat, note):
-            return True
+    if not _PUBLISHER_RE.search(note):
+        for pat in NON_TRADITIONAL_VENUE_PATTERNS:
+            if pat in (r"\bonline\b", r"\bsoftware\b"):
+                continue
+            if re.search(pat, note):
+                return True
 
     url = str(entry.get("url", "")).lower()
     return bool(re.search(r"\b(github|huggingface|dataset|datasets|software|repo)\b", url))
@@ -735,7 +736,6 @@ def _bibtex_field_value(field: str, bibtex_str: str) -> str | None:
         return None
     ch = bibtex_str[pos]
     if ch in ('"', '{'):
-        close = '"' if ch == '"' else '}'
         depth, start = (0 if ch == '"' else 1), pos + 1
         i = start
         while i < len(bibtex_str):

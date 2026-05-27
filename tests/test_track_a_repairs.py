@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS = ROOT / "skills" / "citation-double-check" / "scripts"
 
 
 def load_module(name: str, path: Path):
@@ -21,7 +22,7 @@ def load_module(name: str, path: Path):
 class CitationCheckRepairTests(unittest.TestCase):
     def run_stage0a(self, paper_dir: Path):
         subprocess.run(
-            [sys.executable, str(ROOT / "skills/citation-double-check/scripts/stage0a_parse.py"), str(paper_dir)],
+            [sys.executable, str(SCRIPTS / "stage0a_parse.py"), str(paper_dir)],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -30,7 +31,7 @@ class CitationCheckRepairTests(unittest.TestCase):
 
     def run_track_a(self, paper_dir: Path):
         subprocess.run(
-            [sys.executable, str(ROOT / "skills/citation-double-check/scripts/track_a_check.py"), str(paper_dir)],
+            [sys.executable, str(SCRIPTS / "track_a_check.py"), str(paper_dir)],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -80,7 +81,7 @@ class CitationCheckRepairTests(unittest.TestCase):
                 self.assertTrue(entry[field])
 
     def test_a4_reports_key_missing_from_evidence_pack(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a4(
             {"paper"},
@@ -93,7 +94,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual("critical", findings[0]["severity"])
 
     def test_stage0b_only_preserves_existing_evidence_pack_entries(self):
-        stage0b = load_module("stage0b_fetch_evidence", ROOT / "skills/citation-double-check/scripts/stage0b_fetch_evidence.py")
+        stage0b = load_module("stage0b_fetch_evidence", SCRIPTS / "stage0b_fetch_evidence.py")
         with tempfile.TemporaryDirectory() as td:
             paper_dir = Path(td)
             out_dir = paper_dir / "runs/citation-check"
@@ -126,7 +127,7 @@ class CitationCheckRepairTests(unittest.TestCase):
             self.assertEqual("old", pack["keep"]["sentinel"])
 
     def test_stage0b_only_removes_stale_keys(self):
-        stage0b = load_module("stage0b_fetch_evidence", ROOT / "skills/citation-double-check/scripts/stage0b_fetch_evidence.py")
+        stage0b = load_module("stage0b_fetch_evidence", SCRIPTS / "stage0b_fetch_evidence.py")
         with tempfile.TemporaryDirectory() as td:
             paper_dir = Path(td)
             out_dir = paper_dir / "runs/citation-check"
@@ -159,7 +160,7 @@ class CitationCheckRepairTests(unittest.TestCase):
             self.assertNotIn("stale_removed", pack)
 
     def test_a4_downgrades_url_only_non_traditional_sources(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a4(
             {"repo"},
@@ -179,7 +180,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertTrue(findings[0]["details"]["non_traditional_venue"])
 
     def test_a4_keeps_traditional_paper_with_repository_url_critical(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a4(
             {"paper"},
@@ -201,7 +202,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertFalse(findings[0]["details"]["non_traditional_venue"])
 
     def test_a4_keeps_traditional_paper_with_howpublished_repository_url_critical(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a4(
             {"paper"},
@@ -223,7 +224,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertFalse(findings[0]["details"]["non_traditional_venue"])
 
     def test_a4_keeps_article_note_online_first_critical(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a4(
             {"paper"},
@@ -245,7 +246,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertFalse(findings[0]["details"]["non_traditional_venue"])
 
     def test_a4_keeps_traditional_software_venue_critical(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         for venue in ["International Conference on Software Engineering", "IEEE Software"]:
             with self.subTest(venue=venue):
@@ -268,7 +269,7 @@ class CitationCheckRepairTests(unittest.TestCase):
                 self.assertFalse(findings[0]["details"]["non_traditional_venue"])
 
     def test_a4_downgrades_note_only_model_card(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a4(
             {"model_card"},
@@ -288,7 +289,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertTrue(findings[0]["details"]["non_traditional_venue"])
 
     def test_a4_downgrades_note_blog(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a4(
             {"blog"},
@@ -308,7 +309,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertTrue(findings[0]["details"]["non_traditional_venue"])
 
     def test_a7_suppresses_arxiv_bib_when_dblp_has_published_venue(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a7(
             {"gcn"},
@@ -333,7 +334,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual([], findings)
 
     def test_a7_suppresses_equivalent_arxiv_corr_variants(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a7(
             {"paper"},
@@ -352,7 +353,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual([], findings)
 
     def test_a7_suppresses_arxiv_eprints_as_pure_preprint(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a7(
             {"paper"},
@@ -371,7 +372,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual([], findings)
 
     def test_a7_suppresses_arxiv_url_as_pure_preprint(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         for value in ["\\url{https://arxiv.org/abs/2401.00001}", "\\urlhttps://arxiv.org/abs/2401.00001"]:
             with self.subTest(value=value):
@@ -392,7 +393,7 @@ class CitationCheckRepairTests(unittest.TestCase):
                 self.assertEqual([], findings)
 
     def test_a7_reports_mixed_arxiv_formal_venue_against_corr(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a7(
             {"paper"},
@@ -412,7 +413,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual("A7_venue_mismatch", findings[0]["code"])
 
     def test_a7_reports_mixed_arxiv_formal_venue_mismatch(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a7(
             {"paper"},
@@ -432,7 +433,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual("A7_venue_mismatch", findings[0]["code"])
 
     def test_a7_suppresses_old_format_arxiv_id(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a7(
             {"paper"},
@@ -451,7 +452,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual([], findings)
 
     def test_a9_reports_stage1_bib_errors(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a9(
             [
@@ -473,7 +474,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual("wrong_arxiv", findings[0]["key"])
 
     def test_a9_ignores_stale_diagnosis_keys(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a9(
             [{"key": "old_key", "diagnosis": "bib_error", "issue": "旧诊断"}],
@@ -483,7 +484,7 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual([], findings)
 
     def test_a9_accepts_object_wrapped_diagnosis_file(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a9(
             {"diagnoses": [{"key": "paper", "diagnosis": "bib_error", "issue": "DOI 错误"}]},
@@ -561,7 +562,7 @@ class CitationCheckRepairTests(unittest.TestCase):
             self.assertNotIn("A9_bib_entry_error", [f["code"] for f in result["findings"]])
 
     def test_misc_howpublished_satisfies_url_recommendation(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
 
         findings = track_a.check_a6(
             {
@@ -587,8 +588,8 @@ class CitationCheckRepairTests(unittest.TestCase):
         self.assertEqual([], [f for f in findings if f["code"] == "A6_field_missing"])
 
     def test_stage0b_and_track_a_title_normalization_match(self):
-        track_a = load_module("track_a_check", ROOT / "skills/citation-double-check/scripts/track_a_check.py")
-        stage0b = load_module("stage0b_fetch_evidence", ROOT / "skills/citation-double-check/scripts/stage0b_fetch_evidence.py")
+        track_a = load_module("track_a_check", SCRIPTS / "track_a_check.py")
+        stage0b = load_module("stage0b_fetch_evidence", SCRIPTS / "stage0b_fetch_evidence.py")
 
         self.assertEqual(track_a.norm_title("Beyoncé’s Spatial-Omics"), stage0b.norm_title("Beyoncé’s Spatial-Omics"))
 
